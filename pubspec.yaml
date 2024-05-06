@@ -10,15 +10,35 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_svg: ^2.0.10+1
-
+  flutter_tts: ^4.0.2
+  get: ^4.6.6
+  path_provider: 2.1.2
+  path: 1.8.3
+  shared_preferences: ^2.2.2
+  google_mlkit_image_labeling: 0.10.0
+  flutter_animate: ^4.5.0
+  image_picker: 1.0.7
+  assets_audio_player: ^3.1.1
 dev_dependencies:
+  flutter_launcher_icons: ^0.13.1
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/images/app_name.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
 flutter:
   uses-material-design: true
   assets:
+     - assets/
+     - assets/ml/
+     - assets/audios/
      - assets/images/
+     - assets/images/quiz/angry/
+     - assets/images/quiz/happy/
+     - assets/images/quiz/sad/
   fonts:
     - family: ribeye
       fonts:
