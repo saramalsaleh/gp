@@ -2,15 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:google_mlkit_image_labeling/google_mlkit_image_labeling.dart';
 import 'package:gp/constans/app_color.dart';
 import 'package:gp/constans/utils.dart';
-import 'package:gp/pages/result_page.dart';
+import 'package:gp/pages/takePicture/takePicture_controller.dart';
 import 'package:gp/widgets/app_background.dart';
 import 'package:gp/widgets/app_button.dart';
 import 'package:gp/widgets/shadow.dart';
 import 'package:gp/widgets/star_count.dart';
-import 'package:image_picker/image_picker.dart';
 
 class TakePictureAiPage extends StatefulWidget {
   const TakePictureAiPage({super.key});
@@ -20,29 +18,11 @@ class TakePictureAiPage extends StatefulWidget {
 }
 
 class _TakePictureAiPageState extends State<TakePictureAiPage> {
-  String? _imageLabel;
-
-  String _answer = '';
-  String? imagePath;
-
-  final _picker = ImagePicker();
-
-  late ImageLabeler _imageLabeler;
-  bool _canProcess = false;
-  bool _isBusy = false;
-
-  @override
-  void initState() {
-    _answer = randomQuestion;
-
-    super.initState();
-    _initializeLabeler();
-  }
+  final controller = TakePictureController();
 
   @override
   void dispose() {
-    _canProcess = false;
-    _imageLabeler.close();
+    controller.dispose();
     super.dispose();
   }
 
@@ -73,15 +53,15 @@ class _TakePictureAiPageState extends State<TakePictureAiPage> {
                 children: [
                   InkWell(
                     onTap: () async {
-                      FlutterTts().speak(_answer);
+                      FlutterTts().speak(controller.answer);
                     },
                     child: Center(
                       child: Text(
-                        _answer,
+                        controller.answer,
                         style: TextStyle(
                           fontSize: 44,
                           fontFamily: 'ribeye',
-                          color: getColor(_answer),
+                          color: controller.getColor(),
                           shadows: textShadow,
                         ),
                       ),
@@ -89,16 +69,7 @@ class _TakePictureAiPageState extends State<TakePictureAiPage> {
                   ),
                   InkWell(
                     onTap: () async {
-                      final image = await _picker.pickImage(
-                        source: ImageSource.gallery,
-                      );
-                      if (image?.path == null) return;
-
-                      setState(() => imagePath = image?.path);
-
-                      _processImage(
-                        InputImage.fromFilePath(imagePath!),
-                      );
+                      controller.pickImage();
                     },
                     child: Stack(
                       alignment: Alignment.center,
@@ -111,7 +82,7 @@ class _TakePictureAiPageState extends State<TakePictureAiPage> {
                             ),
                             height: 300,
                             width: 300,
-                            child: (imagePath == null)
+                            child: (controller.imagePath == null)
                                 ? null
                                 : Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -120,7 +91,7 @@ class _TakePictureAiPageState extends State<TakePictureAiPage> {
                                         borderRadius:
                                             BorderRadius.circular(8.0),
                                         child: Image.file(
-                                          File(imagePath!),
+                                          File(controller.imagePath!),
                                           height: 280,
                                           width: 280,
                                           fit: BoxFit.cover,
@@ -132,8 +103,8 @@ class _TakePictureAiPageState extends State<TakePictureAiPage> {
                         ),
                         Icon(
                           Icons.camera_enhance_rounded,
-                          color: AppColor.tealColor
-                              .withOpacity(imagePath != null ? 0.6 : 1),
+                          color: AppColor.tealColor.withOpacity(
+                              controller.imagePath != null ? 0.6 : 1),
                           size: 120,
                         ),
                       ],
@@ -143,28 +114,11 @@ class _TakePictureAiPageState extends State<TakePictureAiPage> {
                     padding: const EdgeInsets.only(bottom: 42),
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 300),
-                      child: imagePath == null
+                      child: controller.imagePath == null
                           ? const SizedBox()
                           : InkWell(
                               onTap: () {
-                                final isCorrect =
-                                    _answer.toLowerCase() == _imageLabel ||
-                                        'other' == _imageLabel;
-
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ResultPage(
-                                      isCorrect: isCorrect,
-                                    ),
-                                  ),
-                                );
-
-                                if (isCorrect) {
-                                  Future.delayed(
-                                          const Duration(milliseconds: 20))
-                                      .then((_) => StarCount.increment());
-                                }
+                                controller.showResult(context);
                               },
                               child: const ShadowWidget.image(
                                 child: IgnorePointer(
@@ -191,41 +145,5 @@ class _TakePictureAiPageState extends State<TakePictureAiPage> {
         ],
       ),
     );
-  }
-
-  Color getColor(String label) {
-    if (label == 'Angry') return AppColor.redColor;
-    if (label == 'Sad') return AppColor.greenColor;
-    return AppColor.yellowColor;
-  }
-
-  void _initializeLabeler() async {
-    // uncomment next line if you want to use the default model
-    // _imageLabeler = ImageLabeler(options: ImageLabelerOptions());
-    const path = 'assets/ml/model.tflite';
-    final modelPath = await getAssetPath(path);
-    final options = LocalLabelerOptions(
-      modelPath: modelPath,
-      confidenceThreshold: 0.1,
-    );
-    _imageLabeler = ImageLabeler(options: options);
-
-    _canProcess = true;
-  }
-
-  Future<void> _processImage(InputImage inputImage) async {
-    if (!_canProcess) return;
-    if (_isBusy) return;
-    _isBusy = true;
-
-    final sp = Stopwatch()..start();
-    final labels = await _imageLabeler.processImage(inputImage);
-
-    labels.sort((a, b) => b.confidence.compareTo(a.confidence));
-    _imageLabel = labels.first.label.toLowerCase();
-
-    _isBusy = false;
-    print ("@TIME :${sp.elapsedMilliseconds}" );
-    
   }
 }

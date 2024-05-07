@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gp/pages/splash.dart';
+import 'package:gp/pages/splash_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 late SharedPreferences prefs;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gp/pages/home.dart';
+import 'package:gp/pages/home/home_page.dart';
 import 'package:gp/widgets/app_background.dart';
 
 class Splash extends StatefulWidget {
